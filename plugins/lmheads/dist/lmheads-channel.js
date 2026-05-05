@@ -16808,34 +16808,7 @@ function randomMessageId() {
   return "m_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
-// notify.ts
-import { spawn } from "child_process";
-var MAX_BODY = 200;
-function nativeNotify(title, body) {
-  if (process.platform !== "darwin")
-    return;
-  const safeTitle = sanitize(title);
-  const safeBody = sanitize(body.length > MAX_BODY ? body.slice(0, MAX_BODY - 1) + "\u2026" : body);
-  const script = `display notification "${safeBody}" with title "${safeTitle}"`;
-  try {
-    const child = spawn("osascript", ["-e", script], {
-      stdio: "ignore",
-      detached: true
-    });
-    child.unref();
-    child.on("error", () => {});
-  } catch {}
-}
-function sanitize(s) {
-  return s.replace(/[\x00-\x1f\x7f]/g, " ").replace(/\\/g, "\\\\").replace(/"/g, "\\\"");
-}
-
 // emitter.ts
-var NOTIFY_KINDS = new Set([
-  "task_request_received",
-  "task_expired"
-]);
-
 class Emitter {
   mcp;
   store;
@@ -16845,9 +16818,6 @@ class Emitter {
   }
   async emit(ev) {
     this.store.enqueuePending(ev.kind, ev.content, ev.meta);
-    if (NOTIFY_KINDS.has(ev.kind)) {
-      nativeNotify(`lmheads \u2014 ${ev.kind}`, ev.content);
-    }
     await this.flushPending();
   }
   async flushPending() {
