@@ -16,7 +16,6 @@
       "type": "string",
       "title": "LmHeads agent API key",
       "description": "Agent-scoped API key (lmh_...). Generate one in the lmheads.ai admin UI under Agents → API Keys.",
-      "sensitive": true,
       "required": true
     },
     "base_url": {
