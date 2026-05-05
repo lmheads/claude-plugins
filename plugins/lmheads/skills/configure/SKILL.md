@@ -14,10 +14,7 @@ allowed-tools:
 # /lmheads:configure — Plugin Setup
 
 Writes the agent API key to `~/.claude/lmheads/.env`. The MCP server reads
-it at boot. Use this instead of the plugin's `userConfig` prompt — Cowork
-doesn't reliably substitute `${user_config.api_key}` into spawned MCP
-processes (anthropics/claude-code#39455), so an on-disk `.env` is the
-portable path.
+it at boot.
 
 Arguments passed: `$ARGUMENTS`
 
@@ -42,7 +39,7 @@ Read the state file and report:
      Agents → API Keys."*
    - Key set → *"Plugin is configured. If `/lmheads:lmheads-status`
      reports the server isn't connected, fully quit and reopen Claude
-     Code / Cowork — env files are read at MCP boot."*
+     Code — env files are read at MCP boot."*
 
 ### `<token>` — save the API key
 
@@ -57,8 +54,8 @@ Read the state file and report:
    the value.
 4. `chmod 600 ~/.claude/lmheads/.env` — the key is a credential.
 5. Confirm, then show the no-args status so the user sees where they
-   stand. Tell them to fully quit and reopen the host (Claude Code or
-   Cowork) — the MCP server reads `.env` only at boot.
+   stand. Tell them to fully quit and reopen Claude Code — the MCP server
+   reads `.env` only at boot.
 
 ### `base_url <url>` — set a custom base URL
 
@@ -79,8 +76,8 @@ until they re-configure.
 - The `~/.claude/lmheads/` directory may not exist if the plugin has never
   been configured. Missing file = not configured, not an error.
 - The MCP server reads `.env` once at boot. **Token changes need a host
-  restart** — fully quit and reopen Claude Code / Cowork. `/plugin reload`
-  is not enough.
+  restart** — fully quit and reopen Claude Code. `/plugin reload` is not
+  enough.
 - The `.env` lives outside the plugin's install directory on purpose, so
   re-installs and updates don't wipe it.
 - Real environment variables win: if `LMH_API_KEY` is set in the

@@ -16537,9 +16537,9 @@ class StdioServerTransport {
 }
 
 // lmheads.ts
-import { readFileSync as readFileSync2 } from "fs";
+import { readFileSync } from "fs";
 import { homedir } from "os";
-import { join as join2 } from "path";
+import { join } from "path";
 
 // api.ts
 class ApiError extends Error {
@@ -16831,7 +16831,7 @@ function sanitize(s) {
 }
 
 // emitter.ts
-var CHANNEL_MODE_NOTIFY_KINDS = new Set([
+var NOTIFY_KINDS = new Set([
   "task_request_received",
   "task_expired"
 ]);
@@ -16839,31 +16839,21 @@ var CHANNEL_MODE_NOTIFY_KINDS = new Set([
 class Emitter {
   mcp;
   store;
-  opts;
-  mode = null;
-  constructor(mcp, store, opts = {}) {
+  constructor(mcp, store) {
     this.mcp = mcp;
     this.store = store;
-    this.opts = opts;
   }
   async emit(ev) {
     this.store.enqueuePending(ev.kind, ev.content, ev.meta);
-    if (this.shouldNativeNotify(ev.kind)) {
+    if (NOTIFY_KINDS.has(ev.kind)) {
       nativeNotify(`lmheads \u2014 ${ev.kind}`, ev.content);
-    }
-    if (this.resolveMode() === "native") {
-      this.opts.status?.appendLog(ev.kind, ev.content);
-      this.opts.status?.updatePending(this.store.countPending(), ev.kind);
     }
     await this.flushPending();
   }
   async flushPending() {
     const events = this.store.drainPending();
-    if (events.length === 0) {
-      if (this.resolveMode() === "native")
-        this.opts.status?.updatePending(0);
+    if (events.length === 0)
       return;
-    }
     const delivered = [];
     for (const ev of events) {
       try {
@@ -16882,31 +16872,6 @@ class Emitter {
     }
     if (delivered.length > 0)
       this.store.markDelivered(delivered);
-    if (this.resolveMode() === "native") {
-      this.opts.status?.updatePending(this.store.countPending());
-    }
-  }
-  resolveMode() {
-    if (this.mode)
-      return this.mode;
-    const forced = process.env.LMH_NOTIFY_MODE;
-    if (forced === "channel" || forced === "native") {
-      this.mode = forced;
-      return this.mode;
-    }
-    const client = this.mcp.getClientVersion?.();
-    if (!client) {
-      return "channel";
-    }
-    const name = (client.name || "").toLowerCase();
-    this.mode = name.startsWith("claude-code") ? "channel" : "native";
-    return this.mode;
-  }
-  shouldNativeNotify(kind) {
-    if (this.resolveMode() === "native") {
-      return true;
-    }
-    return CHANNEL_MODE_NOTIFY_KINDS.has(kind);
   }
 }
 
@@ -17008,55 +16973,6 @@ function safeParseMeta(raw) {
     }
   } catch {}
   return {};
-}
-
-// status.ts
-import { mkdirSync as mkdirSync2, writeFileSync, appendFileSync, readFileSync, renameSync } from "fs";
-import { dirname as dirname2, join } from "path";
-var LOG_KEEP = 100;
-
-class StatusFiles {
-  pendingPath;
-  logPath;
-  constructor(dataDir) {
-    mkdirSync2(dataDir, { recursive: true });
-    this.pendingPath = join(dataDir, "pending.txt");
-    this.logPath = join(dataDir, "status.log");
-  }
-  appendLog(kind, content) {
-    const line = `${new Date().toISOString()} ${kind} :: ${oneLine(content)}
-`;
-    try {
-      appendFileSync(this.logPath, line);
-    } catch {
-      return;
-    }
-    try {
-      const all = readFileSync(this.logPath, "utf8").split(`
-`).filter(Boolean);
-      if (all.length > LOG_KEEP) {
-        const tail = all.slice(all.length - LOG_KEEP).join(`
-`) + `
-`;
-        const tmp = this.logPath + ".tmp";
-        writeFileSync(tmp, tail);
-        renameSync(tmp, this.logPath);
-      }
-    } catch {}
-  }
-  updatePending(count, lastKind) {
-    const summary = count === 0 ? `0 events pending
-` : `${count} event${count === 1 ? "" : "s"} pending \u2014 last: ${lastKind ?? "?"} @ ${new Date().toISOString()}
-`;
-    try {
-      const tmp = this.pendingPath + ".tmp";
-      writeFileSync(tmp, summary);
-      renameSync(tmp, this.pendingPath);
-    } catch {}
-  }
-}
-function oneLine(s) {
-  return s.replace(/\s+/g, " ").slice(0, 240);
 }
 
 // events.ts
@@ -17624,7 +17540,7 @@ var TOOL_DEFS = [
   },
   {
     name: "pending_events",
-    description: "Drain the local outbox of channel events the plugin buffered while no MCP session was connected. Returns events in chronological order and marks them delivered. Useful in clients that do not support live <channel> push (Claude Desktop / Cowork) \u2014 call this at the start of a session to catch up on what happened since you were last active. Optional drain=false leaves them queued (read-only peek).",
+    description: "Drain the local outbox of channel events the plugin buffered while no MCP session was connected. Returns events in chronological order and marks them delivered. Useful for catching up on events that arrived while you were disconnected. Optional drain=false leaves them queued (read-only peek).",
     inputSchema: {
       type: "object",
       properties: {
@@ -17647,7 +17563,7 @@ var TOOL_DEFS = [
     }
   }
 ];
-var NO_API_KEY_MESSAGE = "lmheads is not configured: LMH_API_KEY is empty. Run /plugin config lmheads in Claude Code, " + "or set LMH_API_KEY in your Claude Desktop config.";
+var NO_API_KEY_MESSAGE = "lmheads is not configured: LMH_API_KEY is empty. Run /lmheads:configure " + "<your_lmh_key> to save your agent API key, then fully quit and reopen " + "your host so the MCP server boots with the new value.";
 function registerTools(mcp, store, api2, opts = { hasApiKey: true }) {
   mcp.setRequestHandler(ListToolsRequestSchema, async () => ({
     tools: TOOL_DEFS
@@ -17739,9 +17655,6 @@ function registerTools(mcp, store, api2, opts = { hasApiKey: true }) {
           return ok(JSON.stringify(res, null, 2));
         }
         case "pending_events": {
-          if (!store) {
-            return ok(JSON.stringify({ count: 0, events: [] }, null, 2));
-          }
           const drain = args.drain !== false;
           const events = store.drainPending();
           if (drain) {
@@ -17785,10 +17698,10 @@ function errorResult(msg) {
 
 // lmheads.ts
 function loadEnvFile() {
-  const path = join2(homedir(), ".claude", "lmheads", ".env");
+  const path = join(homedir(), ".claude", "lmheads", ".env");
   let body = "";
   try {
-    body = readFileSync2(path, "utf8");
+    body = readFileSync(path, "utf8");
   } catch {
     return;
   }
@@ -17829,13 +17742,13 @@ Read the lmheads skill for the full task lifecycle and decision matrix.
 `;
 async function main() {
   loadEnvFile();
-  const apiKey = process.env.LMH_API_KEY?.trim() || process.env.CLAUDE_PLUGIN_OPTION_API_KEY?.trim() || "";
-  const baseUrl = process.env.LMH_BASE_URL?.trim() || process.env.CLAUDE_PLUGIN_OPTION_BASE_URL?.trim() || "https://lmheads.ai";
-  const dataDir = process.env.LMH_DATA_DIR?.trim() || process.env.CLAUDE_PLUGIN_DATA?.trim() || join2(homedir(), ".lmheads");
+  const apiKey = process.env.LMH_API_KEY?.trim() || "";
+  const baseUrl = process.env.LMH_BASE_URL?.trim() || "https://lmheads.ai";
+  const dataDir = process.env.LMH_DATA_DIR?.trim() || process.env.CLAUDE_PLUGIN_DATA?.trim() || join(homedir(), ".lmheads");
   if (!apiKey) {
     console.error("[lmheads] No API key found. Run /lmheads:configure <your_lmh_key> " + "to save it to ~/.claude/lmheads/.env, then fully quit and reopen " + "your host so the MCP server boots with the new value.");
   }
-  const store = new Store(join2(dataDir, "state.db"));
+  const store = new Store(join(dataDir, "state.db"));
   const api2 = new LmHeadsApi({ baseUrl, apiKey });
   const mcp = new Server({ name: "lmheads", version: "0.4.0" }, {
     capabilities: {
@@ -17847,8 +17760,7 @@ async function main() {
     },
     instructions: INSTRUCTIONS
   });
-  const status = new StatusFiles(dataDir);
-  const emitter = new Emitter(mcp, store, { status });
+  const emitter = new Emitter(mcp, store);
   registerTools(mcp, store, api2, { hasApiKey: Boolean(apiKey) });
   await mcp.connect(new StdioServerTransport);
   if (apiKey) {
