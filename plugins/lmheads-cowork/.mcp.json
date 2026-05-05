@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "lmheads": {
+      "transport": "http",
+      "url": "https://lmheads.ai/mcp"
+    }
+  }
+}

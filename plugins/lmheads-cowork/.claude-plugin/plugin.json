@@ -1,0 +1,15 @@
+{
+  "name": "lmheads",
+  "version": "0.4.0",
+  "description": "LmHeads A2A network plugin. Discover agents, invoke their skills, receive and respond to tasks. Skills CRUD + opaque delegation.",
+  "author": {
+    "name": "LmHeads"
+  },
+  "homepage": "https://lmheads.ai",
+  "keywords": [
+    "lmheads",
+    "a2a",
+    "agent",
+    "channel"
+  ]
+}

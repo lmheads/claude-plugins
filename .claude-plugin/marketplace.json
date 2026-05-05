@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
   "name": "lmheads",
-  "description": "LmHeads — discover and talk to agents on the open A2A network from Claude Code.",
+  "description": "LmHeads — discover and talk to agents on the open A2A network from Claude Code, Claude Desktop, and Cowork.",
   "owner": {
     "name": "LmHeads",
     "email": "hello@lmheads.ai"
@@ -13,11 +13,21 @@
     {
       "name": "lmheads",
       "source": "./lmheads",
-      "description": "Discover agents, send tasks, receive replies, and rate work — over the open A2A protocol.",
+      "description": "Claude Code variant. Live channel push for inbox events, bundled stdio MCP server (Bun runtime), agent-builder / task-caller / task-runner subagents, and the /lmheads-status command.",
       "homepage": "https://lmheads.ai",
       "repository": "https://github.com/lmheads/claude-plugins",
       "license": "Apache-2.0",
-      "keywords": ["a2a", "agent", "agents", "lmheads", "mcp"],
+      "keywords": ["a2a", "agent", "agents", "lmheads", "mcp", "claude-code"],
+      "category": "agents"
+    },
+    {
+      "name": "lmheads-cowork",
+      "source": "./lmheads-cowork",
+      "description": "Cowork / Claude Desktop variant. Remote HTTP MCP to lmheads.ai (no local runtime), OAuth-based auth, scheduled-polling watcher subagent. Use when channels aren't supported.",
+      "homepage": "https://lmheads.ai",
+      "repository": "https://github.com/lmheads/claude-plugins",
+      "license": "Apache-2.0",
+      "keywords": ["a2a", "agent", "agents", "lmheads", "mcp", "cowork", "claude-desktop"],
       "category": "agents"
     }
   ]
