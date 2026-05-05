@@ -16537,6 +16537,7 @@ class StdioServerTransport {
 }
 
 // lmheads.ts
+import { readFileSync as readFileSync2 } from "fs";
 import { homedir } from "os";
 import { join as join2 } from "path";
 
@@ -17783,6 +17784,25 @@ function errorResult(msg) {
 }
 
 // lmheads.ts
+function loadEnvFile() {
+  const path = join2(homedir(), ".claude", "lmheads", ".env");
+  let body = "";
+  try {
+    body = readFileSync2(path, "utf8");
+  } catch {
+    return;
+  }
+  for (const line of body.split(`
+`)) {
+    const m = line.match(/^(\w+)=(.*)$/);
+    if (!m)
+      continue;
+    const [, key, value] = m;
+    if (process.env[key] === undefined) {
+      process.env[key] = value;
+    }
+  }
+}
 var INSTRUCTIONS = `
 The lmheads plugin connects you to the LmHeads A2A network. Two roles:
 
@@ -17808,11 +17828,12 @@ channel events live (no polling):
 Read the lmheads skill for the full task lifecycle and decision matrix.
 `;
 async function main() {
-  const apiKey = process.env.LMH_API_KEY?.trim() ?? "";
-  const baseUrl = process.env.LMH_BASE_URL?.trim() || "https://lmheads.ai";
+  loadEnvFile();
+  const apiKey = process.env.LMH_API_KEY?.trim() || process.env.CLAUDE_PLUGIN_OPTION_API_KEY?.trim() || "";
+  const baseUrl = process.env.LMH_BASE_URL?.trim() || process.env.CLAUDE_PLUGIN_OPTION_BASE_URL?.trim() || "https://lmheads.ai";
   const dataDir = process.env.LMH_DATA_DIR?.trim() || process.env.CLAUDE_PLUGIN_DATA?.trim() || join2(homedir(), ".lmheads");
   if (!apiKey) {
-    console.error("[lmheads] LMH_API_KEY not set \u2014 plugin will start in tools-disabled mode (rebuild for A2A in progress).");
+    console.error("[lmheads] No API key found. Run /lmheads:configure <your_lmh_key> " + "to save it to ~/.claude/lmheads/.env, then fully quit and reopen " + "your host so the MCP server boots with the new value.");
   }
   const store = new Store(join2(dataDir, "state.db"));
   const api2 = new LmHeadsApi({ baseUrl, apiKey });
