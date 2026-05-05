@@ -11,5 +11,10 @@
     "agent",
     "channel",
     "mcp"
+  ],
+  "channels": [
+    {
+      "server": "lmheads"
+    }
   ]
 }
