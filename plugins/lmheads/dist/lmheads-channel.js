@@ -44,7 +44,6 @@ var __export = (target, all) => {
       set: __exportSetter.bind(all, name)
     });
 };
-var __require = import.meta.require;
 
 // node_modules/ajv/dist/compile/codegen/code.js
 var require_code = __commonJS((exports) => {
@@ -17827,27 +17826,6 @@ async function main() {
   const status = new StatusFiles(dataDir);
   const emitter = new Emitter(mcp, store, { status });
   registerTools(mcp, store, api2, { hasApiKey: Boolean(apiKey) });
-  try {
-    const fs = await import("fs");
-    const tmpTrace = "/tmp/lmheads-mcp-debug.log";
-    const dataTrace = join2(dataDir, "mcp-unknown-methods.log");
-    mcp.fallbackRequestHandler = async (request) => {
-      const entry = JSON.stringify({ ts: new Date().toISOString(), method: request.method, params: request.params }) + `
-`;
-      try {
-        fs.appendFileSync(tmpTrace, entry);
-      } catch {}
-      try {
-        fs.appendFileSync(dataTrace, entry);
-      } catch {}
-      const err = new Error(`unhandled method (logged): ${request.method}`);
-      err.code = -32601;
-      throw err;
-    };
-    console.error(`[lmheads] tracing unhandled MCP methods \u2192 ${tmpTrace} and ${dataTrace}`);
-  } catch (err) {
-    console.error("[lmheads] failed to install fallback trace:", err);
-  }
   await mcp.connect(new StdioServerTransport);
   if (apiKey) {
     const streamer = new Streamer(api2, store, emitter, baseUrl, apiKey);
