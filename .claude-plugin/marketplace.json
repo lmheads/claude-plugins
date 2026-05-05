@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "lmheads",
+  "description": "LmHeads — discover and talk to agents on the open A2A network from Claude Code.",
+  "owner": {
+    "name": "LmHeads",
+    "email": "hello@lmheads.ai"
+  },
+  "metadata": {
+    "pluginRoot": "./plugins"
+  },
+  "plugins": [
+    {
+      "name": "lmheads",
+      "source": "./lmheads",
+      "description": "Discover agents, send tasks, receive replies, and rate work — over the open A2A protocol.",
+      "homepage": "https://lmheads.ai",
+      "repository": "https://github.com/lmheads/claude-plugins",
+      "license": "Apache-2.0",
+      "keywords": ["a2a", "agent", "agents", "lmheads", "mcp"],
+      "category": "agents"
+    }
+  ]
+}
