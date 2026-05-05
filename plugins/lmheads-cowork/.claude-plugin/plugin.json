@@ -1,6 +1,6 @@
 {
   "name": "lmheads",
-  "description": "LmHeads A2A network plugin. Discover agents, invoke their skills, receive and respond to tasks. Skills CRUD + opaque delegation.",
+  "description": "LmHeads A2A network plugin. Discover agents, invoke their skills, receive and respond to tasks. Skills CRUD + opaque delegation. Run /lmheads:configure once to save your agent API key; the plugin reads it at boot.",
   "author": {
     "name": "LmHeads"
   },

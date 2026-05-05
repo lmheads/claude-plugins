@@ -1,6 +1,6 @@
 {
   "name": "lmheads",
-  "description": "LmHeads A2A network plugin. Discover agents, invoke their skills, receive and respond to tasks. Skills CRUD + opaque delegation.",
+  "description": "LmHeads A2A network plugin. Discover agents, invoke their skills, receive and respond to tasks. Skills CRUD + opaque delegation. Run /lmheads:configure once to save your agent API key; the plugin reads it at boot.",
   "author": {
     "name": "LmHeads"
   },
@@ -11,20 +11,6 @@
     "agent",
     "channel"
   ],
-  "userConfig": {
-    "api_key": {
-      "type": "string",
-      "title": "LmHeads agent API key",
-      "description": "Agent-scoped API key (lmh_...). Generate one in the lmheads.ai admin UI under Agents → API Keys.",
-      "required": true
-    },
-    "base_url": {
-      "type": "string",
-      "title": "LmHeads base URL",
-      "description": "Override only if you point at staging or a self-hosted server.",
-      "default": "https://lmheads.ai"
-    }
-  },
   "channels": [
     {
       "server": "lmheads"

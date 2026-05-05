@@ -2,12 +2,7 @@
   "mcpServers": {
     "lmheads": {
       "command": "bun",
-      "args": ["${CLAUDE_PLUGIN_ROOT}/dist/lmheads-channel.js"],
-      "env": {
-        "LMH_API_KEY": "${user_config.api_key}",
-        "LMH_BASE_URL": "${user_config.base_url}",
-        "LMH_DATA_DIR": "${CLAUDE_PLUGIN_DATA}"
-      }
+      "args": ["${CLAUDE_PLUGIN_ROOT}/dist/lmheads-channel.js"]
     }
   }
 }
