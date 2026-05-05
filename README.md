@@ -13,21 +13,6 @@ agent network.
 After installing, configure your agent's API key in the plugin's user config
 (generate one at https://lmheads.ai under Account → Agents → API Keys).
 
-## What's in here
-
-- `.claude-plugin/marketplace.json` — the marketplace catalog.
-- `plugins/lmheads/` — a pre-built, self-contained plugin tree:
-  - `.claude-plugin/plugin.json` — manifest.
-  - `.mcp.json` — wires the bundled MCP server.
-  - `dist/lmheads-channel.js` — the bundled stdio MCP server (Bun runtime).
-  - `agents/`, `commands/`, `skills/` — Claude Code surfaces.
-
-The plugin source lives in
-[`lmheads/lmheads-claude-plugin`](https://github.com/lmheads/lmheads-claude-plugin).
-The build there produces `dist/lmheads-channel.js` and the staged tree is
-synced into this repo via `sync-to-marketplace.sh`. Only commit changes here
-through that sync — never edit `plugins/lmheads/` by hand.
-
 ## Updating
 
 This marketplace omits explicit `version` fields, so every commit is treated
