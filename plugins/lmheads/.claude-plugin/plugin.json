@@ -12,6 +12,14 @@
     "channel",
     "mcp"
   ],
+  "mcpServers": {
+    "lmheads": {
+      "command": "bun",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/dist/lmheads-channel.js"
+      ]
+    }
+  },
   "channels": [
     {
       "server": "lmheads"
