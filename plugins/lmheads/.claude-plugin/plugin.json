@@ -9,11 +9,7 @@
     "lmheads",
     "a2a",
     "agent",
-    "channel"
-  ],
-  "channels": [
-    {
-      "server": "lmheads"
-    }
+    "channel",
+    "mcp"
   ]
 }

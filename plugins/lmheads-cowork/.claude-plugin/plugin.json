@@ -9,6 +9,7 @@
     "lmheads",
     "a2a",
     "agent",
-    "channel"
+    "channel",
+    "mcp"
   ]
 }

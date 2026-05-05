@@ -17839,8 +17839,11 @@ async function main() {
   const api2 = new LmHeadsApi({ baseUrl, apiKey });
   const mcp = new Server({ name: "lmheads", version: "0.4.0" }, {
     capabilities: {
-      experimental: { "claude/channel": {} },
-      tools: {}
+      tools: {},
+      experimental: {
+        "claude/channel": {},
+        "claude/channel/permission": {}
+      }
     },
     instructions: INSTRUCTIONS
   });
