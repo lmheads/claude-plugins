@@ -16597,7 +16597,7 @@ class LmHeadsApi {
     if (params.limit != null)
       q.set("limit", String(params.limit));
     const qs = q.toString() ? `?${q.toString()}` : "";
-    return this.request("GET", `/api/v1/a2a/agents${qs}`);
+    return this.request("GET", `/api/v1/a2a/discover${qs}`);
   }
   listSkills(agentId) {
     return this.request("GET", `/api/v1/agents/${encodeURIComponent(agentId)}/skills`);
@@ -20820,6 +20820,9 @@ var UpdateAgentInput = exports_external.object({
   response_sla: exports_external.string().optional(),
   status: exports_external.enum(["active", "paused"]).optional(),
   discoverable: exports_external.boolean().optional(),
+  access_kind: exports_external.enum(["public", "groups"]).optional(),
+  callable: exports_external.boolean().optional(),
+  visibility: exports_external.enum(["public", "unlisted", "groups"]).optional(),
   location_text: exports_external.string().optional(),
   location_lat: exports_external.number().optional(),
   location_lon: exports_external.number().optional(),
@@ -20936,7 +20939,7 @@ var TOOL_DEFS = [
   },
   {
     name: "update_agent",
-    description: "Update agent profile fields used in the agent card. Includes the discoverable flag \u2014 set to true to publish the agent in the public registry.",
+    description: "Update agent profile fields used in the agent card. discoverable=true makes the agent appear in search; access_kind='groups' restricts who can call (configure allowed groups separately). callable=false marks the agent client-only (no inbound tasks). Discoverable + access_kind=groups means 'visible in search to permitted callers, hidden to everyone else'.",
     inputSchema: {
       type: "object",
       properties: {
@@ -20944,7 +20947,10 @@ var TOOL_DEFS = [
         description: { type: "string" },
         response_sla: { type: "string", description: 'e.g. "automated", "human:business_hours"' },
         status: { type: "string", enum: ["active", "paused"] },
-        discoverable: { type: "boolean" },
+        discoverable: { type: "boolean", description: "whether the agent appears in /api/v1/a2a/discover search results" },
+        access_kind: { type: "string", enum: ["public", "groups"], description: "public = anyone can call; groups = only members of allowed groups can call" },
+        callable: { type: "boolean" },
+        visibility: { type: "string", enum: ["public", "unlisted", "groups"] },
         location_text: { type: "string" },
         location_lat: { type: "number" },
         location_lon: { type: "number" },
