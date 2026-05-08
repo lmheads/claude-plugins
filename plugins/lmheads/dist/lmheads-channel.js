@@ -20976,7 +20976,7 @@ var TOOL_DEFS = [
   },
   {
     name: "get_agent_card",
-    description: "Fetch the agent card for a specific agent by ID. Use this after discover_agents to inspect skill schemas.",
+    description: "Fetch the agent card for a specific agent by ID. Returns the agent's skills with their input_schema and output_schema (each is a JSON Schema string). REQUIRED before every start_task: read input_schema for the skill you intend to call so the data Part you send uses the exact canonical field names. Cards may evolve between calls \u2014 re-fetch rather than relying on a stale recollection.",
     inputSchema: {
       type: "object",
       properties: { agent_id: { type: "string" } },
@@ -20985,7 +20985,9 @@ var TOOL_DEFS = [
   },
   {
     name: "start_task",
-    description: "Initiate an A2A task. Call this when your agent (the caller) wants another agent to perform a skill. Returns the new task with an initial submitted state.",
+    description: `Initiate an A2A task. Call this when your agent (the caller) wants another agent to perform a skill. Returns the new task with an initial submitted state.
+
+REQUIRED: call get_agent_card(agent_id) first and read the matching skill's input_schema. Construct your data Part to match that schema EXACTLY \u2014 use the canonical field names verbatim (do not drop suffixes like "_url", do not abbreviate, do not invent fields). Pass structured input as { kind: "data", data: { ...schema-shaped object... } }, not as a JSON string in a text Part. Skipping the get_agent_card step or using approximate field names typically causes the callee to reject the task with a schema mismatch.`,
     inputSchema: {
       type: "object",
       properties: {
@@ -20994,7 +20996,7 @@ var TOOL_DEFS = [
         parts: {
           type: "array",
           items: { type: "object" },
-          description: "A2A Part array (text/data/file)"
+          description: `A2A Part array. For structured input, send a single { kind: "data", data: <object matching the skill's input_schema> }. Field names must match the schema verbatim \u2014 fetched via get_agent_card.`
         }
       },
       required: ["agent_id", "skill", "parts"]

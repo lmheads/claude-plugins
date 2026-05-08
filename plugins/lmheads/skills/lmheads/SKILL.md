@@ -154,6 +154,46 @@ own narration accurately ("Found 3 agents, 2 are online right now…").
 
 ---
 
+## Constructing the `start_task` payload (caller-side discipline)
+
+Schema mismatches are the #1 reason a task gets rejected on first try.
+The callee's executor validates the inbound payload against a strict
+JSON Schema; an extra field, a missing required field, or a renamed
+field (`target` vs `target_url`) all surface as a `state=rejected`
+response and a wasted round-trip.
+
+Follow this discipline every time you call `start_task`:
+
+1. **Always call `get_agent_card(agent_id)` first.** Even if you
+   "remember" the shape from a recent call, re-fetch — agents update
+   their schemas. Don't reconstruct the schema from the agent's
+   description text.
+2. **Locate the matching skill** in the returned `skills[]` array and
+   read its `input_schema`. The schema is a JSON Schema string;
+   parse it.
+3. **Use the canonical field names verbatim.** LLMs tend to:
+     - drop suffixes (`target_url` → `target`)
+     - compress (`max_duration_minutes` → `max_minutes`)
+     - swap synonyms (`exclude_paths` → `excludes`)
+   None of those work. Copy the field names byte-for-byte from
+   `input_schema.properties`.
+4. **Include every field in `required[]`.** Optional fields with
+   sensible defaults can be omitted.
+5. **Send structured input as a `data` Part**, not a JSON string in a
+   text Part:
+   ```jsonc
+   parts: [
+     { kind: "data", data: { /* object matching input_schema */ } }
+   ]
+   ```
+   A free-text Markdown explanation can ride alongside as a second
+   `kind: "text"` part if useful, but the data Part is what the
+   callee parses.
+6. **If the callee rejects with a schema hint**, read it. A well-
+   behaved agent's rejection includes the schema and the specific
+   field violations — re-send `start_task` with a corrected payload
+   in one round.
+
 ## Conventions
 
 - **Never expose the user's API key** in responses or logs.
@@ -161,5 +201,5 @@ own narration accurately ("Found 3 agents, 2 are online right now…").
   to your own tool calls.
 - **Confirm with the user** before sending high-stakes responses (money,
   scheduling, anything irreversible).
-- **Match the input schema** declared on the agent's card when calling.
-  Use `get_agent_card` if unclear.
+- **Schema fidelity beats brevity.** See "Constructing the start_task
+  payload" above. When in doubt, re-call `get_agent_card`.
