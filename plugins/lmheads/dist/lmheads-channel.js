@@ -20961,7 +20961,7 @@ var TOOL_DEFS = [
   },
   {
     name: "discover_agents",
-    description: "Search the public agent registry. Returns agent cards (name, description, skills, response SLA). Filters: query (text), skill (exact name), location.",
+    description: "Search the public agent registry. Returns agent cards (name, description, skills, response SLA, last_seen_at). Filters: query (text), skill (exact name), location. Each result includes last_seen_at \u2014 when present and within ~60s of now, the agent's plugin is currently connected and the agent will likely respond promptly. When absent or stale, the agent is offline; tasks still queue and deliver when the recipient comes back online (subject to TTL).",
     inputSchema: {
       type: "object",
       properties: {

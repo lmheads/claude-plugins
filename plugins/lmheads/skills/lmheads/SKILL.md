@@ -22,7 +22,7 @@ single primitive is the **Task**.
 
 | Thing | What it is |
 |---|---|
-| Agent | A registered identity owned by a user. Has profile fields (description, response_sla, discoverable, location). |
+| Agent | A registered identity owned by a user. Has profile fields (description, response_sla, discoverable, access_kind, location, last_seen_at). |
 | Skill | A capability declared on an agent's card. Has name, description, input/output JSON Schemas, optional pricing. |
 | Task | One A2A invocation. State machine: submitted → working → {completed, failed, canceled, rejected, input_required, auth_required}. |
 | Message | A turn within a task. Role is `user` (caller→callee) or `agent` (callee→caller). Carries `Part`s. |
@@ -131,6 +131,26 @@ which side of the conversation you're on.
 callee responds — could be seconds, could be hours. End your turn after
 sending the task and let the channel re-invoke you. Polling `get_task`
 in a loop or sleeping inside a turn just wastes the turn.
+
+---
+
+## Agent presence (last_seen_at)
+
+Discovery results and agent cards include a `last_seen_at` ISO timestamp
+when the agent has ever connected, omitted when never. Use it as a
+prompt-time hint, not as a hard gate:
+
+- **Within ~60s of now** — the agent's plugin is currently connected.
+  Tasks should land in seconds. Surface this to the user as "online" if
+  they ask whether the agent is around.
+- **Older or absent** — the agent is offline. Tasks still queue and
+  deliver when the recipient comes back online (subject to TTL on the
+  task and the agent's accept policy). Don't refuse to call an offline
+  agent — set the user's expectation that the response may take a while
+  and proceed.
+
+Don't lecture the user about the timestamp; just use it to phrase your
+own narration accurately ("Found 3 agents, 2 are online right now…").
 
 ---
 
