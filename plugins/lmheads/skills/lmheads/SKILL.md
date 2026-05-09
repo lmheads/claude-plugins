@@ -156,43 +156,56 @@ own narration accurately ("Found 3 agents, 2 are online right now…").
 
 ## Constructing the `start_task` payload (caller-side discipline)
 
-Schema mismatches are the #1 reason a task gets rejected on first try.
-The callee's executor validates the inbound payload against a strict
-JSON Schema; an extra field, a missing required field, or a renamed
-field (`target` vs `target_url`) all surface as a `state=rejected`
-response and a wasted round-trip.
+The A2A spec doesn't model typed input/output JSON Schemas — every
+agent's input shape lives in the spec's `description` and `examples`
+fields. So the discipline isn't "validate against a schema before
+calling"; it's "study the agent's examples, mirror one when you can,
+and treat `input_required` as a normal back-and-forth".
 
-Follow this discipline every time you call `start_task`:
+Per `start_task` call:
 
-1. **Always call `get_agent_card(agent_id)` first.** Even if you
-   "remember" the shape from a recent call, re-fetch — agents update
-   their schemas. Don't reconstruct the schema from the agent's
-   description text.
-2. **Locate the matching skill** in the returned `skills[]` array and
-   read its `input_schema`. The schema is a JSON Schema string;
-   parse it.
-3. **Use the canonical field names verbatim.** LLMs tend to:
-     - drop suffixes (`target_url` → `target`)
-     - compress (`max_duration_minutes` → `max_minutes`)
-     - swap synonyms (`exclude_paths` → `excludes`)
-   None of those work. Copy the field names byte-for-byte from
-   `input_schema.properties`.
-4. **Include every field in `required[]`.** Optional fields with
-   sensible defaults can be omitted.
-5. **Send structured input as a `data` Part**, not a JSON string in a
-   text Part:
+1. **Always call `get_agent_card(agent_id)` first.** Re-fetch each
+   time; agents update their descriptions and examples. Don't trust
+   a stale recollection.
+2. **Locate the matching skill** in `skills[]` and read **both** its
+   `description` (when to use it, what it does) **and** `examples`
+   (3–5 entries; a mix of natural-language prompts and JSON
+   payload literals). Examples are the canonical place agents
+   document the input shape.
+3. **Mirror the example shape.** If an example is JSON, copy the
+   field names verbatim — LLMs reflexively drop suffixes (`target_url`
+   → `target`), compress (`max_duration_minutes` → `max_minutes`), or
+   swap synonyms; none of those work because the executor on the
+   other side is validating against an exact schema even though it
+   isn't published.
+4. **Send structured input as a `data` Part:**
    ```jsonc
    parts: [
-     { kind: "data", data: { /* object matching input_schema */ } }
+     { kind: "data", data: { /* mirror an example */ } }
    ]
    ```
-   A free-text Markdown explanation can ride alongside as a second
-   `kind: "text"` part if useful, but the data Part is what the
-   callee parses.
-6. **If the callee rejects with a schema hint**, read it. A well-
-   behaved agent's rejection includes the schema and the specific
-   field violations — re-send `start_task` with a corrected payload
-   in one round.
+   A natural-language explanation can ride alongside as a second
+   `kind: "text"` part. Both are valid; the callee picks what it
+   needs.
+
+### When the callee asks for clarification (`state=input_required`)
+
+`input_required` is a **conversation**, not a failure. It means the
+callee parsed your message but needs a corrected or expanded
+payload. The reply pattern:
+
+1. Read the callee's clarification message — well-behaved agents
+   include a concrete example of the shape they want.
+2. Build a corrected payload.
+3. Send it via `send_message_to_task` on the **same task** (caller-
+   side). Do NOT start a fresh `start_task` — that loses the task's
+   history and the callee's context.
+4. The callee's next response either completes the task or asks for
+   more refinement. Iterate until terminal.
+
+The terminal states are `completed`, `failed`, `rejected`,
+`canceled`, `auth_required`. Anything else is in-flight; keep the
+task open.
 
 ## Conventions
 
@@ -201,5 +214,4 @@ Follow this discipline every time you call `start_task`:
   to your own tool calls.
 - **Confirm with the user** before sending high-stakes responses (money,
   scheduling, anything irreversible).
-- **Schema fidelity beats brevity.** See "Constructing the start_task
-  payload" above. When in doubt, re-call `get_agent_card`.
+- **Mirror examples; iterate via input_required.** See above.

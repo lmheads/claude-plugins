@@ -20806,6 +20806,7 @@ var RegisterSkillInput = exports_external.object({
   description: exports_external.string().min(1),
   input_schema: exports_external.string().optional(),
   output_schema: exports_external.string().optional(),
+  examples: exports_external.array(exports_external.string()).optional(),
   pricing_kind: exports_external.enum(["free", "per_call_fixed"]).optional(),
   pricing_amount: exports_external.number().nonnegative().optional(),
   pricing_currency: exports_external.string().optional()
@@ -20912,15 +20913,20 @@ var ReadSecretInput = exports_external.object({
 var TOOL_DEFS = [
   {
     name: "register_skill",
-    description: "Add a skill to an agent you own. The skill is published on the agent card and appears in discover_agents results when the agent is discoverable.",
+    description: "Add a skill to an agent you own. The skill is published on the agent card and appears in discover_agents results when the agent is discoverable. Provide concrete examples (3-5 entries: a mix of natural-language prompts and JSON payload literals) so prospective callers can learn the input shape from the spec card; this is the canonical channel for input documentation since A2A doesn't model typed schemas.",
     inputSchema: {
       type: "object",
       properties: {
         agent_id: { type: "string" },
         name: { type: "string" },
-        description: { type: "string" },
-        input_schema: { type: "string", description: "JSON Schema as a string" },
-        output_schema: { type: "string", description: "JSON Schema as a string" },
+        description: { type: "string", description: "What the skill does + when to call it. The first place a prospective caller looks." },
+        input_schema: { type: "string", description: "JSON Schema as a string. Used internally for executor-side validation; not surfaced on the public card." },
+        output_schema: { type: "string", description: "JSON Schema as a string. Internal; same caveat as input_schema." },
+        examples: {
+          type: "array",
+          items: { type: "string" },
+          description: `Concrete prompts/payloads the skill handles. Mix natural-language ("Audit https://example.com") with JSON literals ('{"target_url":"https://example.com","intensity":"passive"}'). Surfaced verbatim on the spec's AgentSkill.examples \u2014 the canonical place callers look for input shape.`
+        },
         pricing_kind: { type: "string", enum: ["free", "per_call_fixed"] },
         pricing_amount: { type: "number" },
         pricing_currency: { type: "string" }
@@ -20976,7 +20982,7 @@ var TOOL_DEFS = [
   },
   {
     name: "get_agent_card",
-    description: "Fetch the agent card for a specific agent by ID. Returns the agent's skills with their input_schema and output_schema (each is a JSON Schema string). REQUIRED before every start_task: read input_schema for the skill you intend to call so the data Part you send uses the exact canonical field names. Cards may evolve between calls \u2014 re-fetch rather than relying on a stale recollection.",
+    description: "Fetch the spec-conformant AgentCard for a specific agent by ID. Returns each skill with its description and examples (a mix of natural-language prompts and JSON payload literals \u2014 read both before constructing your start_task input). The A2A spec does not model typed input/output schemas, so examples are the canonical channel for shape information. Re-fetch rather than relying on a stale recollection \u2014 agents update their examples and descriptions.",
     inputSchema: {
       type: "object",
       properties: { agent_id: { type: "string" } },
@@ -20987,7 +20993,9 @@ var TOOL_DEFS = [
     name: "start_task",
     description: `Initiate an A2A task. Call this when your agent (the caller) wants another agent to perform a skill. Returns the new task with an initial submitted state.
 
-REQUIRED: call get_agent_card(agent_id) first and read the matching skill's input_schema. Construct your data Part to match that schema EXACTLY \u2014 use the canonical field names verbatim (do not drop suffixes like "_url", do not abbreviate, do not invent fields). Pass structured input as { kind: "data", data: { ...schema-shaped object... } }, not as a JSON string in a text Part. Skipping the get_agent_card step or using approximate field names typically causes the callee to reject the task with a schema mismatch.`,
+Before constructing the payload, call get_agent_card(agent_id) and read the matching skill's description AND examples. Examples are the canonical place agents document their input shape (the A2A spec does not model typed schemas). Mirror an example's structure when you can.
+
+If the callee can't parse your input it will respond with state=input_required and a clarifying message \u2014 that is a conversation, not a failure. Read the message, fix your payload, and reply with send_message_to_task on the same task; do NOT start over with a fresh start_task. Only state=rejected or state=failed is terminal.`,
     inputSchema: {
       type: "object",
       properties: {
@@ -20996,7 +21004,7 @@ REQUIRED: call get_agent_card(agent_id) first and read the matching skill's inpu
         parts: {
           type: "array",
           items: { type: "object" },
-          description: `A2A Part array. For structured input, send a single { kind: "data", data: <object matching the skill's input_schema> }. Field names must match the schema verbatim \u2014 fetched via get_agent_card.`
+          description: `A2A Part array. Structured input goes in a { kind: "data", data: <object> } part \u2014 mirror the shape from the skill's examples. A natural-language explanation can ride alongside as { kind: "text", text: "..." }. Both are fine; the callee picks what it needs.`
         }
       },
       required: ["agent_id", "skill", "parts"]
@@ -21169,6 +21177,7 @@ function registerTools(mcp, store, api2, opts = { hasApiKey: true }) {
             description: i2.description,
             input_schema: i2.input_schema ?? '{"type":"object","properties":{}}',
             output_schema: i2.output_schema ?? '{"type":"object","properties":{}}',
+            examples: i2.examples,
             pricing_kind: i2.pricing_kind,
             pricing_amount: i2.pricing_amount,
             pricing_currency: i2.pricing_currency
