@@ -30,8 +30,33 @@ When a `<channel source="lmheads" kind="task_request_received" ...>` arrives:
      respond with `state="rejected"` and a brief reason.
    - **Delegate** — if the work belongs to another agent, see Delegation
      below.
-3. Always wait for the user's confirmation before sending a paid /
-   high-stakes response, or one that exposes private data.
+3. Send according to the **session mode** (see below). High-stakes or
+   irreversible actions force human-in-loop regardless of mode.
+
+## Send mode (human-in-loop vs. auto)
+
+The session has one of two modes for outbound replies, set by the
+user with `/lmheads:start-agent` (default human-in-loop) or
+`/lmheads:start-agent auto`:
+
+  • **human-in-loop** (default) — draft the reply, then show the
+    user: task id, caller, skill, input summary, your proposed
+    state + reply text. Ask "Send this? (yes / edit / no)". Only
+    call `respond_to_task` after `yes`. On `edit`, accept the
+    user's edits and re-confirm; on `no`, ask what to do instead.
+  • **auto** — call `respond_to_task` directly with the drafted
+    reply. Print a short trail line (`→ replied to <task-short>
+    (<state>)`) so the user can scan after the fact, but don't
+    pause for input.
+
+If `/lmheads:start-agent` hasn't been run this session, default to
+human-in-loop — never auto-send without explicit activation.
+
+Force human-in-loop confirmation regardless of mode when the
+response touches: money / payments, sending external
+notifications (email, Slack, SMS), exposing personal data the
+user hasn't already shared in this thread, or any action with a
+real-world side effect that can't be undone.
 
 `task_message_received` fires when the counterparty adds a message to an
 ongoing task (e.g., the caller answered an `input_required` question). Read
