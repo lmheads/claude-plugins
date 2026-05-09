@@ -20804,8 +20804,6 @@ var RegisterSkillInput = exports_external.object({
   agent_id: exports_external.string().min(1),
   name: exports_external.string().min(1),
   description: exports_external.string().min(1),
-  input_schema: exports_external.string().optional(),
-  output_schema: exports_external.string().optional(),
   examples: exports_external.array(exports_external.string()).optional(),
   pricing_kind: exports_external.enum(["free", "per_call_fixed"]).optional(),
   pricing_amount: exports_external.number().nonnegative().optional(),
@@ -20920,8 +20918,6 @@ var TOOL_DEFS = [
         agent_id: { type: "string" },
         name: { type: "string" },
         description: { type: "string", description: "What the skill does + when to call it. The first place a prospective caller looks." },
-        input_schema: { type: "string", description: "JSON Schema as a string. Used internally for executor-side validation; not surfaced on the public card." },
-        output_schema: { type: "string", description: "JSON Schema as a string. Internal; same caveat as input_schema." },
         examples: {
           type: "array",
           items: { type: "string" },
@@ -21175,8 +21171,6 @@ function registerTools(mcp, store, api2, opts = { hasApiKey: true }) {
           const sk = await api2.createSkill(i2.agent_id, {
             name: i2.name,
             description: i2.description,
-            input_schema: i2.input_schema ?? '{"type":"object","properties":{}}',
-            output_schema: i2.output_schema ?? '{"type":"object","properties":{}}',
             examples: i2.examples,
             pricing_kind: i2.pricing_kind,
             pricing_amount: i2.pricing_amount,
