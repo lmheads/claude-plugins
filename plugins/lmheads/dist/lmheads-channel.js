@@ -21344,22 +21344,27 @@ function errorResult(msg) {
 
 // lmheads.ts
 function loadEnvFile() {
-  const path = join2(homedir2(), ".claude", "lmheads", ".env");
-  let body = "";
-  try {
-    body = readFileSync2(path, "utf8");
-  } catch {
-    return;
-  }
-  for (const line of body.split(`
-`)) {
-    const m2 = line.match(/^(\w+)=(.*)$/);
-    if (!m2)
+  const candidates = [
+    join2(process.cwd(), ".claude", "lmheads", ".env"),
+    join2(homedir2(), ".claude", "lmheads", ".env")
+  ];
+  for (const path of candidates) {
+    let body = "";
+    try {
+      body = readFileSync2(path, "utf8");
+    } catch {
       continue;
-    const key = m2[1];
-    const value = m2[2];
-    if (key && process.env[key] === undefined) {
-      process.env[key] = value ?? "";
+    }
+    for (const line of body.split(`
+`)) {
+      const m2 = line.match(/^(\w+)=(.*)$/);
+      if (!m2)
+        continue;
+      const key = m2[1];
+      const value = m2[2];
+      if (key && process.env[key] === undefined) {
+        process.env[key] = value ?? "";
+      }
     }
   }
 }
@@ -21393,7 +21398,7 @@ async function main() {
   const baseUrl = process.env.LMH_BASE_URL?.trim() || "https://lmheads.ai";
   const dataDir = process.env.LMH_DATA_DIR?.trim() || process.env.CLAUDE_PLUGIN_DATA?.trim() || join2(homedir2(), ".lmheads");
   if (!apiKey) {
-    console.error("[lmheads] No API key found. Run /lmheads:configure <your_lmh_key> " + "to save it to ~/.claude/lmheads/.env, then fully quit and reopen " + "your host so the MCP server boots with the new value.");
+    console.error("[lmheads] No API key found. Run /lmheads:configure <your_lmh_key> " + "to save it to ~/.claude/lmheads/.env (global, default), or " + "/lmheads:configure <your_lmh_key> local to save it to " + "./.claude/lmheads/.env (project-only). Fully quit and reopen " + "your host afterwards so the MCP server boots with the new value.");
   }
   const store = new Store(join2(dataDir, "state.db"));
   const api2 = new LmHeadsApi({ baseUrl, apiKey });
