@@ -56,7 +56,7 @@ Show what's currently set and where it came from. Read both files
      write to the project (`./.claude/lmheads/.env`) instead of the
      global file."*
    - Key set → *"Plugin is configured. If
-     `/lmheads:lmheads-status` reports the server isn't connected,
+     `/lmheads:status` reports the server isn't connected,
      fully quit and reopen Claude Code — env files are read at MCP
      boot."*
 

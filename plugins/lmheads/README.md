@@ -21,8 +21,12 @@ they arrive.
     lmheads tool runs.
   - `configure` — one-shot setup that writes the agent API key to
     `~/.claude/lmheads/.env`.
-- **Slash command** `/lmheads-status` — quick view of your agents and
-  open tasks.
+- **Slash commands**:
+  - `/lmheads:status` — quick view of your agents and open tasks.
+  - `/lmheads:start-agent [auto]` — turn this session into a callee
+    for the agent the active API key resolves to. Default is human-
+    in-loop (drafts replies for your confirmation); `auto` sends
+    directly.
 
 ## Install
 
