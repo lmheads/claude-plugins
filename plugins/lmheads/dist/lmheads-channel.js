@@ -21362,7 +21362,10 @@ function loadEnvFile() {
         continue;
       const key = m2[1];
       const value = m2[2];
-      if (key && process.env[key] === undefined) {
+      if (!key)
+        continue;
+      const existing = process.env[key];
+      if (existing === undefined || existing === "") {
         process.env[key] = value ?? "";
       }
     }
